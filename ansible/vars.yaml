@@ -1,5 +1,5 @@
 ---
-github_organization_name:
+github_organization_name: fabianorosas
 github_bot_name:
 github_bot_user_name:
 github_bot_email:
@@ -9,7 +9,7 @@ ghprb_admin_organization:
 
 centos_alternate_mirror_release_url:
 
-upload_server_host_name:
-upload_server_user_name:
-upload_server_builds_dir_path:
-upload_server_weekly_dir_path:
+upload_server_host_name: localhost
+upload_server_user_name: root
+upload_server_builds_dir_path: /tmp/builds_dir
+upload_server_weekly_dir_path: /tmp/weekly_dir
