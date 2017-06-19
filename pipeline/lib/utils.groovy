@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers
 import com.cloudbees.plugins.credentials.CredentialsScope
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.domains.Domain
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
 import hudson.util.Secret
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 
@@ -14,6 +15,19 @@ def addSecretString(Secret secret, String description) {
 
   credentials = new StringCredentialsImpl(
     CredentialsScope.GLOBAL, credentialsId, description, secret)
+
+  getCredentialsStore().addCredentials(Domain.global(), credentials)
+
+  return credentialsId
+}
+
+def addUserPassCredentials(String user, Secret password,
+			   String description) {
+  credentialsId = java.util.UUID.randomUUID().toString()
+
+  credentials = new UsernamePasswordCredentialsImpl(
+    CredentialsScope.GLOBAL, credentialsId, description, user,
+    password.toString())
 
   getCredentialsStore().addCredentials(Domain.global(), credentials)
 
@@ -33,7 +47,6 @@ def removeCredentials(String credentialsId) {
 
   getCredentialsStore().removeCredentials(domain, credentials)
 }
-
 
 def getCredentialsStore() {
   return SystemCredentialsProvider.getInstance().getStore()

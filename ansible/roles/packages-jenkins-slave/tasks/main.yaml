@@ -7,5 +7,7 @@
     - git
     # Java Runtime Environment. Jenkins slave dependency
     - java-1.8.0-openjdk-headless
+    # For running Ansible playbooks. Depends on 'ansible' plugin.
+    - ansible
   tags:
     - setup
