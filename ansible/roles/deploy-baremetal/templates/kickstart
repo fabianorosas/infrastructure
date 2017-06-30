@@ -21,7 +21,7 @@ openssh-server
 # Setup SSH on the livecd so that ansible can gather facts about the
 # installation
 mkdir --mode=700 /root/.ssh/
-echo "{{ playbook_node_ssh_pub_key }}" > /root/.ssh/authorized_keys
+echo "{{ playbook_node_ssh_pub_key['content'] | b64decode }}" > /root/.ssh/authorized_keys
 chmod 644 /root/.ssh/authorized_keys
 
 # Create SSH server host keys

@@ -36,8 +36,9 @@
     state: directory
 
 - name: Get SSH public key
-  set_fact:
-    playbook_node_ssh_pub_key: "{{ lookup('file', ansible_user_dir + '/.ssh/id_rsa.pub') }}"
+  slurp:
+    src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+  register: playbook_node_ssh_pub_key
 
 - name: Make kickstart available in HTTP server
   template:
