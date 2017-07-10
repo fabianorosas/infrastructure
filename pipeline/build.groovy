@@ -1,6 +1,7 @@
 #!groovy
 
-pipelineStages = load 'infrastructure/pipeline/build/stages.groovy'
+loader = load 'infrastructure/pipeline/lib/loader.groovy'
+pipelineStages = loader.load 'build/stages.groovy'
 
 def execute() {
   timestamps {
