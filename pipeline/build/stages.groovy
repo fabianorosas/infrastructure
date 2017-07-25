@@ -114,8 +114,6 @@ def buildPackages() {
       triggeredRepoName, 'Building packages', 'PENDING')
   }
 
-  buildInfo.BUILD_STATUS = 'FAIL'
-  buildInfo.BUILD_PACKAGES_FINISHED = false
   buildInfo.BUILD_LOG = currentBuild.getAbsoluteUrl() + 'consoleFull'
   String VERSIONS_REPO_URL =
     gitRepos['versions'].userRemoteConfigs.get(0).url
@@ -165,6 +163,9 @@ def buildPackages() {
       if (params.PACKAGES) {
         packagesParameter = "--packages $PACKAGES"
       }
+
+      // Failure to build packages should result in a build failure
+      // (catchError does that automatically)
       catchError {
         sh """\
 python host_os.py \\
@@ -177,13 +178,12 @@ python host_os.py \\
            $packagesParameter \\
            $params.BUILD_ISO_EXTRA_PARAMETERS \\
 """
-        buildInfo.BUILD_STATUS = 'PASS'
-        buildInfo.BUILD_PACKAGES_FINISHED = true
+        currentBuild.result = 'SUCCESS'
       }
     }
   }
 
-  if (buildInfo.BUILD_PACKAGES_FINISHED) {
+  if (currentBuild.result == 'SUCCESS') {
     dir('builds/result/packages') {
       File latestBuildDir = new File(pwd(), 'latest')
       String timestamp = sh(script: "readlink $latestBuildDir",
@@ -203,17 +203,15 @@ python host_os.py \\
   utils.archiveAndPrint('logs/build-packages/*.log', true)
   utils.archiveAndPrint('logs/build-packages/mock_build/*/*/*.log', true)
 
-  if (!buildInfo.BUILD_PACKAGES_FINISHED) {
+  if (currentBuild.result == 'FAILURE') {
     error('Packages build failed')
   }
 }
 
 def buildIso() {
-  if (!buildInfo.BUILD_PACKAGES_FINISHED) {
+  if (currentBuild.result == 'FAILURE') {
     error('Skipping ISO build because packages build failed')
   }
-
-  buildInfo.BUILD_ISO_FINISHED = false
 
   if (triggeredRepoName) {
     utils.setGithubStatus(
@@ -264,12 +262,12 @@ python host_os.py \\
            --iso-version $ISO_VERSION \\
            $params.BUILD_ISO_EXTRA_PARAMETERS \\
 """
-        buildInfo.BUILD_ISO_FINISHED = true
+	currentBuild.result == 'SUCCESS'
       }
     }
   }
 
-  if (buildInfo.BUILD_ISO_FINISHED) {
+  if (currentBuild.result == 'SUCCESS') {
     sh 'ln -s builds/result/iso/latest iso'
     stash name: 'iso_dir', includes: 'iso/'
     utils.archiveAndPrint('iso/')
@@ -280,7 +278,9 @@ python host_os.py \\
   }
   utils.archiveAndPrint('logs/build-iso/*.log', true)
 
-  if (!buildInfo.BUILD_ISO_FINISHED) {
+  if (currentBuild.result == 'FAILURE') {
+    // Failure to build ISO should not result in a build failure
+    currentBuild.result = 'UNSTABLE'
     error('ISO build failed')
   }
 }
@@ -292,10 +292,13 @@ def uploadArtifacts() {
   }
 
   deleteDir()
-  if (buildInfo.BUILD_PACKAGES_FINISHED) {
+
+  // allowing for the result to be 'UNSTABLE'
+  if (currentBuild.result != 'FAILURE') {
     unstash 'repository_dir'
   }
-  if (buildInfo.BUILD_ISO_FINISHED) {
+
+  if (currentBuild.result == 'SUCCESS') {
     unstash 'iso_dir'
   }
 
@@ -351,12 +354,12 @@ gpgcheck=0
   // problem occurs and the build is manually replayed, for example
   utils.rsyncUpload('--ignore-existing --recursive ' +
       constants.BUILD_INFORMATION_DIR, BUILD_DIR_RSYNC_URL)
-  if (buildInfo.BUILD_PACKAGES_FINISHED) {
+  if (currentBuild.result != 'FAILURE') {
     utils.rsyncUpload('--ignore-existing --recursive repository',
                       BUILD_DIR_RSYNC_URL)
     utils.rsyncUpload('hostos.repo', BUILD_DIR_RSYNC_URL)
   }
-  if (buildInfo.BUILD_ISO_FINISHED) {
+  if (currentBuild.result == 'SUCCESS') {
     utils.rsyncUpload('--ignore-existing --recursive iso', BUILD_DIR_RSYNC_URL)
   }
 }
